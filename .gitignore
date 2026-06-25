@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Saidas geradas pelo pipeline (reproduziveis a partir do raw)
+/dados_limpos_final.csv
+/outputs/*.png
+
+# Dados brutos pesados (manter apenas o instrutivo .md)
+/data/raw/*.csv
+
+# Ambiente / editor
+.idea/
+.vscode/
+.DS_Store
+
+# Notas locais
+NOTES.md
