@@ -1,0 +1,5 @@
+ano,mes,mes_numero,data_referencia,estado,regiao,numero_queimadas,numero_queimadas_outlier_iqr,numero_queimadas_tratado_iqr
+1998,Janeiro,1,1998-01-01,Amazonas,Norte,120,False,120
+1999,Fevereiro,2,1999-02-01,Para,Norte,230,False,230
+2000,Marco,3,2000-03-01,Sao Paulo,Sudeste,310,False,310
+2001,Abril,4,2001-04-01,Minas Gerais,Sudeste,150,False,150
