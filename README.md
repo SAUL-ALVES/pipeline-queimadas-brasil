@@ -2,6 +2,7 @@
 
 Projeto desenvolvido para a **Avaliação Prática Unificada — Ciência de Dados**.
 
+- **Equipe:** Saul, Edílson, Luiz Vitor
 - **Tema escolhido:** Opção C — Meio Ambiente / Queimadas
 - **Dataset:** Forest Fires in Brazil — Kaggle
 - **Arquivo esperado:** `data/raw/amazon.csv`
