@@ -25,12 +25,20 @@ pipeline-queimadas-brasil/
 ├── data/
 │   └── raw/
 │       └── amazon.csv
+├── analysis/
+│   ├── eda.py
+│   ├── report.py
+│   └── validator.py
 ├── outputs/
+│   ├── dados/
+│   ├── graficos/
+│   └── relatorios/
 ├── src/
 │   ├── extract/
 │   │   └── extractor.py
 │   ├── transform/
 │   │   └── cleaner.py
+│   ├── config.py
 │   ├── visualize.py
 │   └── main.py
 ├── requirements.txt
@@ -100,38 +108,16 @@ A partir da raiz do projeto:
 python src/main.py
 ```
 
-O pipeline executa quatro etapas:
+O pipeline executa seis etapas:
 
-1. ingestão dos dados brutos;
-2. limpeza e tratamento estatístico;
-3. geração do CSV final limpo;
-4. geração automática do gráfico.
+1. extração dos dados brutos;
+2. limpeza e tratamento estatístico (encoding, nulos, IQR, merge);
+3. análise exploratória (EDA);
+4. exportação do CSV final limpo;
+5. geração do relatório e das estatísticas descritivas;
+6. geração automática dos gráficos.
 
 > Observação: o dataset de entrada deve estar em `data/raw/amazon.csv` antes de executar o pipeline.
-
-```bash
-git checkout -b pipeline-funcional
-```
-
-3. Adicione os arquivos modificados:
-
-```bash
-git add .
-```
-
-4. Faça um commit com uma mensagem clara:
-
-```bash
-git commit -m "Corrige pipeline e atualiza README com instruções de execução"
-```
-
-5. Envie a branch para o GitHub:
-
-```bash
-git push -u origin pipeline-funcional
-```
-
-6. No GitHub, abra um Pull Request da branch `pipeline-funcional` para `main`.
 
 ---
 

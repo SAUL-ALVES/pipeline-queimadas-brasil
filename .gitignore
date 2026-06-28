@@ -5,9 +5,9 @@ __pycache__/
 venv/
 env/
 
-# Saidas geradas pelo pipeline (reproduziveis a partir do raw)
-/dados_limpos_final.csv
-/outputs/*.png
+# Os outputs (outputs/dados, outputs/graficos, outputs/relatorios) sao
+# versionados de proposito para a entrega: o professor ve os resultados
+# sem precisar baixar o dataset e rodar o pipeline.
 
 # Dados brutos pesados (manter apenas o instrutivo .md)
 /data/raw/*.csv

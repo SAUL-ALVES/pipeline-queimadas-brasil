@@ -39,11 +39,20 @@ class Visualizer:
 
     def grafico_anual(self):
 
+        # Usa a coluna tratada por IQR quando disponivel (winsorizada),
+        # para reduzir o efeito visual de valores extremos sem apagar
+        # os registros originais. Conforme documentado na secao 8 do README.
+        coluna = (
+            "numero_queimadas_tratado_iqr"
+            if "numero_queimadas_tratado_iqr" in self.df.columns
+            else "numero_queimadas"
+        )
+
         dados = (
 
             self.df
 
-            .groupby("ano")["numero_queimadas"]
+            .groupby("ano")[coluna]
 
             .sum()
 
@@ -60,6 +69,10 @@ class Visualizer:
         plt.xlabel("Ano")
 
         plt.ylabel("Número de Queimadas")
+
+        # Integridade visual: eixo Y iniciado em zero para nao exagerar
+        # diferencas pequenas (secao 8 do README).
+        plt.ylim(bottom=0)
 
         plt.grid(True)
 
