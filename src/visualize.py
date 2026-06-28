@@ -1,72 +1,238 @@
 """
-visualize.py - Visualizacao Cientifica (Integridade Visual).
+visualize.py
 
-Gera automaticamente um grafico de linhas com a evolucao anual do numero de
-queimadas. O grafico usa a coluna tratada por IQR quando ela existir, mantendo
-o eixo Y iniciado em zero por se tratar de uma contagem/agregacao.
+Responsável por gerar automaticamente gráficos para análise
+exploratória do dataset de queimadas.
+
+Gráficos gerados:
+
+✔ Evolução Anual
+✔ Top 10 Estados
+✔ Queimadas por Região
+✔ Queimadas por Mês
+✔ Heatmap Ano x Mês
 """
-from __future__ import annotations
 
-import logging
 from pathlib import Path
+import logging
 
 import matplotlib
+matplotlib.use("Agg")
 
-matplotlib.use("Agg")  # backend sem janela: salva o grafico em arquivo
-import matplotlib.pyplot as plt  # noqa: E402
-import pandas as pd  # noqa: E402
+import matplotlib.pyplot as plt
+import pandas as pd
 
 logger = logging.getLogger("pipeline.visualize")
 
 
-def gerar_grafico(df: pd.DataFrame, caminho_saida: Path) -> None:
-    """Gera e salva grafico de evolucao temporal das queimadas por ano.
+class Visualizer:
 
-    Criterios de integridade visual aplicados:
-      - titulo e eixos claros;
-      - unidade explicita no eixo Y;
-      - eixo Y iniciado em zero;
-      - escala proporcional, sem truncamento enganoso.
-    """
-    if "ano" not in df.columns:
-        raise ValueError("A coluna 'ano' e obrigatoria para gerar o grafico temporal.")
+    def __init__(self, df, output_dir):
 
-    coluna_metrica = (
-        "numero_queimadas_tratado_iqr"
-        if "numero_queimadas_tratado_iqr" in df.columns
-        else "numero_queimadas"
-    )
-    if coluna_metrica not in df.columns:
-        raise ValueError("Nao ha coluna numerica de queimadas para visualizacao.")
+        self.df = df.copy()
 
-    serie_anual = (
-        df.groupby("ano", as_index=False)[coluna_metrica]
-        .sum()
-        .sort_values("ano")
-        .rename(columns={coluna_metrica: "total_queimadas"})
-    )
+        self.output_dir = Path(output_dir)
 
-    if serie_anual.empty:
-        raise ValueError("Nao ha dados suficientes para gerar o grafico.")
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    caminho_saida = Path(caminho_saida)
-    caminho_saida.parent.mkdir(parents=True, exist_ok=True)
+    # -------------------------------------------------------
 
-    fig, ax = plt.subplots(figsize=(11, 6))
-    ax.plot(serie_anual["ano"], serie_anual["total_queimadas"], marker="o")
+    def grafico_anual(self):
 
-    ax.set_title("Evolucao anual de queimadas registradas no Brasil")
-    ax.set_xlabel("Ano")
-    ax.set_ylabel("Total de queimadas registradas (contagem)")
-    ax.set_ylim(bottom=0)
-    ax.grid(True, axis="y", alpha=0.3)
+        dados = (
 
-    anos = serie_anual["ano"].astype(int).tolist()
-    ax.set_xticks(anos)
-    ax.tick_params(axis="x", rotation=45)
+            self.df
 
-    fig.tight_layout()
-    fig.savefig(caminho_saida, dpi=150, bbox_inches="tight")
-    plt.close(fig)
+            .groupby("ano")["numero_queimadas"]
 
-    logger.info("Grafico salvo em: %s", caminho_saida)
+            .sum()
+
+            .sort_index()
+
+        )
+
+        plt.figure(figsize=(12,6))
+
+        plt.plot(dados.index,dados.values,marker="o")
+
+        plt.title("Evolução Anual das Queimadas")
+
+        plt.xlabel("Ano")
+
+        plt.ylabel("Número de Queimadas")
+
+        plt.grid(True)
+
+        plt.tight_layout()
+
+        plt.savefig(self.output_dir/"01_queimadas_ano.png",dpi=150)
+
+        plt.close()
+
+    # -------------------------------------------------------
+
+    def grafico_estados(self):
+
+        dados=(
+
+            self.df
+
+            .groupby("estado")["numero_queimadas"]
+
+            .sum()
+
+            .sort_values(ascending=False)
+
+            .head(10)
+
+        )
+
+        plt.figure(figsize=(12,6))
+
+        dados.plot(kind="bar")
+
+        plt.title("Top 10 Estados com mais Queimadas")
+
+        plt.ylabel("Número de Queimadas")
+
+        plt.tight_layout()
+
+        plt.savefig(self.output_dir/"02_top_estados.png",dpi=150)
+
+        plt.close()
+
+    # -------------------------------------------------------
+
+    def grafico_regioes(self):
+
+        dados=(
+
+            self.df
+
+            .groupby("regiao")["numero_queimadas"]
+
+            .sum()
+
+        )
+
+        plt.figure(figsize=(8,8))
+
+        plt.pie(
+
+            dados,
+
+            labels=dados.index,
+
+            autopct="%1.1f%%"
+
+        )
+
+        plt.title("Distribuição por Região")
+
+        plt.savefig(self.output_dir/"03_regioes.png",dpi=150)
+
+        plt.close()
+
+    # -------------------------------------------------------
+
+    def grafico_meses(self):
+
+        dados=(
+
+            self.df
+
+            .groupby("mes")["numero_queimadas"]
+
+            .sum()
+
+        )
+
+        plt.figure(figsize=(12,6))
+
+        dados.plot(kind="bar")
+
+        plt.title("Queimadas por Mês")
+
+        plt.ylabel("Número de Queimadas")
+
+        plt.tight_layout()
+
+        plt.savefig(self.output_dir/"04_meses.png",dpi=150)
+
+        plt.close()
+
+    # -------------------------------------------------------
+
+    def heatmap(self):
+
+        tabela=(
+
+            self.df.pivot_table(
+
+                values="numero_queimadas",
+
+                index="ano",
+
+                columns="mes",
+
+                aggfunc="sum"
+
+            )
+
+        )
+
+        plt.figure(figsize=(12,8))
+
+        plt.imshow(
+
+            tabela,
+
+            aspect="auto"
+
+        )
+
+        plt.colorbar(label="Número de Queimadas")
+
+        plt.xticks(
+
+            range(len(tabela.columns)),
+
+            tabela.columns,
+
+            rotation=45
+
+        )
+
+        plt.yticks(
+
+            range(len(tabela.index)),
+
+            tabela.index
+
+        )
+
+        plt.title("Heatmap Ano x Mês")
+
+        plt.tight_layout()
+
+        plt.savefig(self.output_dir/"05_heatmap.png",dpi=150)
+
+        plt.close()
+
+    # -------------------------------------------------------
+
+    def gerar_todos(self):
+
+        logger.info("Gerando gráficos...")
+
+        self.grafico_anual()
+
+        self.grafico_estados()
+
+        self.grafico_regioes()
+
+        self.grafico_meses()
+
+        self.heatmap()
+
+        logger.info("Todos os gráficos foram gerados com sucesso.")

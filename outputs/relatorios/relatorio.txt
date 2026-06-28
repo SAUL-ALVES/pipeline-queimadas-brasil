@@ -1,0 +1,22 @@
+============================================================
+RELATÓRIO DO PIPELINE DE QUEIMADAS
+============================================================
+
+Total de registros.............: 4
+Estados analisados............: 4
+Regiões analisadas............: 2
+Período.......................: 1998 - 2001
+
+Média de queimadas............: 202.50
+Mediana.......................: 190.00
+Máximo........................: 310.00
+Mínimo........................: 120.00
+
+Estado com maior ocorrência...: Sao Paulo
+Região com maior ocorrência...: Sudeste
+Ano mais crítico..............: 2000
+Mês mais crítico..............: Marco
+
+============================================================
+Relatório gerado automaticamente pelo pipeline.
+============================================================

@@ -37,16 +37,23 @@ pipeline-queimadas-brasil/
 └── README.md
 ```
 
-O arquivo final limpo é gerado automaticamente na raiz do projeto com o nome:
+O arquivo final limpo é gerado automaticamente em:
 
 ```text
-dados_limpos_final.csv
+outputs/dados/dados_limpos_final.csv
 ```
 
-O gráfico principal é gerado em:
+Os relatórios e estatísticas são salvos em:
 
 ```text
-outputs/grafico_principal.png
+outputs/relatorios/relatorio.txt
+outputs/relatorios/estatisticas.csv
+```
+
+Os gráficos são gerados em:
+
+```text
+outputs/graficos/
 ```
 
 ---
@@ -99,6 +106,32 @@ O pipeline executa quatro etapas:
 2. limpeza e tratamento estatístico;
 3. geração do CSV final limpo;
 4. geração automática do gráfico.
+
+> Observação: o dataset de entrada deve estar em `data/raw/amazon.csv` antes de executar o pipeline.
+
+```bash
+git checkout -b pipeline-funcional
+```
+
+3. Adicione os arquivos modificados:
+
+```bash
+git add .
+```
+
+4. Faça um commit com uma mensagem clara:
+
+```bash
+git commit -m "Corrige pipeline e atualiza README com instruções de execução"
+```
+
+5. Envie a branch para o GitHub:
+
+```bash
+git push -u origin pipeline-funcional
+```
+
+6. No GitHub, abra um Pull Request da branch `pipeline-funcional` para `main`.
 
 ---
 

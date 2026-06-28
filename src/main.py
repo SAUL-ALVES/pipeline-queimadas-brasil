@@ -1,103 +1,254 @@
 """
-main.py - Orquestrador central do pipeline de dados de queimadas no Brasil.
+main.py
 
-Disciplina: Ciencia de Dados | Avaliacao Pratica Unificada (Parte 1)
-Tema (Opcao C): Meio Ambiente (Queimadas)
-Equipe: Saul, Edilson, Luiz Vitor
+Orquestrador principal do pipeline de Ciência de Dados.
 
-Fluxo do pipeline (reprodutivel):
-    1. INGESTAO   (extract/extractor.py)  -> le os CSVs brutos do Kaggle
-    2. TRANSFORM  (transform/cleaner.py)  -> sanitiza, trata nulos, isola
-                                              outliers via IQR e consolida (merge)
-    3. EXPORTACAO                         -> grava dados_limpos_final.csv na raiz
-    4. VISUALIZACAO (visualize.py)        -> gera grafico com integridade visual
+Fluxo:
 
-Uso (a partir da RAIZ do projeto):
-    python src/main.py
+1 - Extração
+2 - Limpeza
+3 - EDA
+4 - Relatório
+5 - Exportação
+6 - Visualizações
+
+Execução:
+
+python src/main.py
 """
+
 from __future__ import annotations
 
 import logging
 import sys
+import time
 from pathlib import Path
 
-# Garante que a pasta `src/` esteja no path para os imports dos pacotes,
-# independentemente de onde o script seja chamado.
 SRC_DIR = Path(__file__).resolve().parent
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
-from extract.extractor import extrair_dados          # noqa: E402
-from transform.cleaner import limpar_dados            # noqa: E402
-from visualize import gerar_grafico                   # noqa: E402
-
-# ---------------------------------------------------------------------------
-# Caminhos base do projeto (resolvidos a partir deste arquivo)
-# ---------------------------------------------------------------------------
 ROOT_DIR = SRC_DIR.parent
-DATA_RAW_DIR = ROOT_DIR / "data" / "raw"
-OUTPUT_CSV = ROOT_DIR / "dados_limpos_final.csv"
-OUTPUT_GRAFICO = ROOT_DIR / "outputs" / "grafico_principal.png"
 
-# ---------------------------------------------------------------------------
-# Configuracao de log simples (exigido na camada de ingestao)
-# ---------------------------------------------------------------------------
+for path in (str(ROOT_DIR), str(SRC_DIR)):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+# ================================
+# Config
+# ================================
+
+from config import (
+    RAW_DIR,
+    OUTPUT_CSV,
+    GRAPH_DIR,
+    REPORT_DIR,
+    REPORT_FILE,
+    STATISTICS_FILE,
+)
+
+# ================================
+# Pipeline
+# ================================
+
+from extract.extractor import extrair_dados
+from transform.cleaner import limpar_dados
+
+# ================================
+# Análises
+# ================================
+
+from analysis.eda import EDA
+from analysis.report import Report
+
+# Se existir validator.py descomente
+#
+# from analysis.validator import Validator
+
+# ================================
+# Visualizações
+# ================================
+
+from visualize import Visualizer
+
+# ================================
+# Logs
+# ================================
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
+    format="%(asctime)s | %(levelname)-8s | %(message)s",
     datefmt="%H:%M:%S",
 )
+
 logger = logging.getLogger("pipeline")
 
 
-def executar_pipeline() -> None:
-    """Executa as etapas do pipeline em ordem, com log por etapa."""
-    logger.info("=" * 60)
-    logger.info("PIPELINE DE QUEIMADAS NO BRASIL - INICIO")
-    logger.info("=" * 60)
-
-    # 1. INGESTAO ----------------------------------------------------------
-    logger.info("[1/4] Ingestao: lendo dados brutos de %s", DATA_RAW_DIR)
-    df_bruto = extrair_dados(DATA_RAW_DIR)
-    logger.info("[1/4] Volumetria bruta: %d linhas x %d colunas", *df_bruto.shape)
-
-    # 2. TRANSFORMACAO -----------------------------------------------------
-    logger.info("[2/4] Transformacao: sanitizacao, nulos, IQR e merge")
-    df_limpo = limpar_dados(df_bruto)
-    logger.info("[2/4] Volumetria final: %d linhas x %d colunas", *df_limpo.shape)
-
-    # 3. EXPORTACAO --------------------------------------------------------
-    logger.info("[3/4] Exportacao: gravando %s", OUTPUT_CSV.name)
-    df_limpo.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
-
-    # 4. VISUALIZACAO ------------------------------------------------------
-    logger.info("[4/4] Visualizacao: gerando grafico principal")
-    OUTPUT_GRAFICO.parent.mkdir(parents=True, exist_ok=True)
-    gerar_grafico(df_limpo, OUTPUT_GRAFICO)
-
-    logger.info("=" * 60)
-    logger.info("PIPELINE CONCLUIDO COM SUCESSO")
-    logger.info("Base consolidada : %s", OUTPUT_CSV)
-    logger.info("Grafico gerado   : %s", OUTPUT_GRAFICO)
-    logger.info("=" * 60)
+# =========================================================
 
 
-def main() -> int:
-    """Ponto de entrada. Retorna codigo de saida (0 = sucesso)."""
+def executar_pipeline():
+
+    inicio = time.perf_counter()
+
+    logger.info("=" * 70)
+    logger.info("PIPELINE DE DADOS - QUEIMADAS NO BRASIL")
+    logger.info("=" * 70)
+
+    # ------------------------------------------------------
+    # EXTRAÇÃO
+    # ------------------------------------------------------
+
+    logger.info("[1/6] Extraindo dados...")
+
+    df_bruto = extrair_dados(RAW_DIR)
+
+    logger.info(
+        "Dataset bruto: %d linhas x %d colunas",
+        *df_bruto.shape,
+    )
+
+    # ------------------------------------------------------
+    # LIMPEZA
+    # ------------------------------------------------------
+
+    logger.info("[2/6] Limpando dados...")
+
+    df = limpar_dados(df_bruto)
+
+    logger.info(
+        "Dataset tratado: %d linhas x %d colunas",
+        *df.shape,
+    )
+
+    # ------------------------------------------------------
+    # VALIDAÇÃO (opcional)
+    # ------------------------------------------------------
+
+    """
+    validator = Validator(df)
+
+    validator.validar()
+    """
+
+    # ------------------------------------------------------
+    # EDA
+    # ------------------------------------------------------
+
+    logger.info("[3/6] Executando EDA...")
+
+    eda = EDA(df, REPORT_DIR)
+
+    if hasattr(eda, "imprimir"):
+        eda.imprimir()
+
+    if hasattr(eda, "imprimir_resumo"):
+        eda.imprimir_resumo()
+
+    if hasattr(eda, "estatisticas"):
+        eda.estatisticas()
+
+    # ------------------------------------------------------
+    # EXPORTAÇÃO
+    # ------------------------------------------------------
+
+    logger.info("[4/6] Exportando CSV tratado...")
+
+    OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+
+    df.to_csv(
+        OUTPUT_CSV,
+        index=False,
+        encoding="utf-8",
+    )
+
+    logger.info("Arquivo salvo em: %s", OUTPUT_CSV)
+
+    # ------------------------------------------------------
+    # RELATÓRIO
+    # ------------------------------------------------------
+
+    logger.info("[5/6] Gerando relatório...")
+
+    report = Report(
+        df,
+        REPORT_FILE,
+    )
+
+    report.gerar()
+
+    logger.info("Relatório salvo em: %s", REPORT_FILE)
+
+    # ------------------------------------------------------
+    # GRÁFICOS
+    # ------------------------------------------------------
+
+    logger.info("[6/6] Gerando gráficos...")
+
+    visual = Visualizer(
+        df,
+        GRAPH_DIR,
+    )
+
+    visual.gerar_todos()
+
+    logger.info("Gráficos gerados em: %s", GRAPH_DIR)
+
+    # ------------------------------------------------------
+
+    tempo = time.perf_counter() - inicio
+
+    logger.info("=" * 70)
+    logger.info("PIPELINE EXECUTADO COM SUCESSO")
+    logger.info("=" * 70)
+
+    logger.info("Tempo total : %.2f segundos", tempo)
+    logger.info("Linhas      : %d", len(df))
+    logger.info("Colunas     : %d", len(df.columns))
+    logger.info("Estados     : %d", df["estado"].nunique())
+    logger.info("Regiões     : %d", df["regiao"].nunique())
+
+    if "numero_queimadas_outlier_iqr" in df.columns:
+
+        logger.info(
+            "Outliers IQR: %d",
+            int(df["numero_queimadas_outlier_iqr"].sum()),
+        )
+
+    logger.info("=" * 70)
+
+
+# =========================================================
+
+
+def main():
+
     try:
+
         executar_pipeline()
+
         return 0
-    except FileNotFoundError as exc:
-        logger.error("Arquivo nao encontrado: %s", exc)
-        logger.error("Confira se o CSV bruto esta em data/raw/ (veja o README).")
-        return 1
-    except NotImplementedError as exc:
-        logger.warning("Etapa ainda nao implementada: %s", exc)
-        return 2
-    except Exception as exc:  # noqa: BLE001 - log de qualquer falha inesperada
-        logger.exception("Falha inesperada no pipeline: %s", exc)
+
+    except FileNotFoundError as erro:
+
+        logger.error("Arquivo não encontrado.")
+
+        logger.error(str(erro))
+
         return 1
 
+    except KeyboardInterrupt:
+
+        logger.warning("Execução interrompida.")
+
+        return 2
+
+    except Exception:
+
+        logger.exception("Erro inesperado.")
+
+        return 1
+
+
+# =========================================================
 
 if __name__ == "__main__":
+
     raise SystemExit(main())
