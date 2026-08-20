@@ -15,7 +15,7 @@ Projeto desenvolvido para a **Avaliação Prática Unificada — Ciência de Dad
 
 O objetivo deste projeto é construir um pipeline reprodutível de Ciência de Dados para ingestão, limpeza, tratamento estatístico, consolidação e visualização de dados sobre queimadas registradas no Brasil.
 
-Além do processamento técnico, o projeto documenta limitações de amostragem, viés de seleção, classificação estatística das variáveis e uma reflexão sobre inferência causal.
+Além do processamento técnico, o projeto documenta limitações de amostragem, viés de seleção, classificação estatística das variáveis e uma reflexão sobre inferência causal. A Parte 2 inicia a camada de inferência estatística (bootstrap, intervalos de confiança e teste A/B por permutação).
 
 ---
 
@@ -39,9 +39,14 @@ pipeline-queimadas-brasil/
 │   │   └── extractor.py
 │   ├── transform/
 │   │   └── cleaner.py
+│   ├── inference/
+│   │   ├── bootstrap.py
+│   │   └── ab_testing.py
 │   ├── config.py
 │   ├── visualize.py
 │   └── main.py
+├── distribuicao_bootstrap.png    # gerado na raiz
+├── distribuicao_permutacao.png   # gerado na raiz
 ├── requirements.txt
 └── README.md
 ```
@@ -59,11 +64,13 @@ outputs/relatorios/relatorio.txt
 outputs/relatorios/estatisticas.csv
 ```
 
-Os gráficos são gerados em:
+Os gráficos exploratórios da Parte 1 são gerados em:
 
 ```text
 outputs/graficos/
 ```
+
+Os gráficos de inferência da Parte 2 (seções 4.1 e 4.2) são salvos na raiz do repositório, como exige o enunciado.
 
 ---
 
@@ -109,14 +116,36 @@ A partir da raiz do projeto:
 python src/main.py
 ```
 
-O pipeline executa seis etapas:
+O pipeline executa sete etapas:
 
 1. extração dos dados brutos;
 2. limpeza e tratamento estatístico (encoding, nulos, IQR, merge);
 3. análise exploratória (EDA);
 4. exportação do CSV final limpo;
 5. geração do relatório e das estatísticas descritivas;
-6. geração automática dos gráficos.
+6. geração automática dos gráficos exploratórios;
+7. inferência estatística (bootstrap, ICs e teste A/B por permutação).
+
+A etapa 7 lê obrigatoriamente `outputs/dados/dados_limpos_final.csv` e grava na raiz do projeto:
+
+```text
+distribuicao_bootstrap.png
+distribuicao_permutacao.png
+```
+
+Os relatórios numéricos da inferência ficam em:
+
+```text
+outputs/relatorios/inferencia_bootstrap.txt
+outputs/relatorios/teste_ab.txt
+```
+
+Para rodar só a inferência (sem repetir o ETL), a partir da raiz:
+
+```bash
+python src/inference/bootstrap.py
+python src/inference/ab_testing.py
+```
 
 > Observação: o dataset de entrada deve estar em `data/raw/amazon.csv` antes de executar o pipeline.
 
@@ -323,7 +352,135 @@ Portanto, as conclusões devem ser interpretadas como evidências descritivas so
 |---|---|
 | `src/extract/extractor.py` | Lê os CSVs brutos e registra volumetria inicial |
 | `src/transform/cleaner.py` | Padroniza dados, trata nulos, aplica IQR e faz merge com regiões |
-| `src/visualize.py` | Gera gráfico científico com integridade visual |
+| `src/inference/bootstrap.py` | Reamostragem bootstrap e intervalos de confiança de 95% |
+| `src/inference/ab_testing.py` | Teste A/B por permutação (período seco vs. chuvoso) |
+| `src/visualize.py` | Gera gráficos exploratórios e os histogramas da Parte 2 |
 | `src/main.py` | Orquestra todo o pipeline |
 | `requirements.txt` | Lista dependências do projeto |
 | `README.md` | Documentação técnica e fundamentação científica |
+
+---
+
+## 11. Parte 2 — divisão do trio (recorte de 33%)
+
+A Parte 2 foi fatiada em três blocos equivalentes. **Este recorte cobre apenas a inferência estatística (seções 4.1 e 4.2)**, que corresponde ao critério de avaliação “Inferência e Estimação Estatística” (25%) mais a orquestração e os dois primeiros gráficos exigidos.
+
+| Recorte | Seções do enunciado | Entregáveis | Status |
+|---|---|---|---|
+| **1/3 — este commit** | 4.1 Bootstrap e ICs; 4.2 Teste A/B e permutação | `bootstrap.py`, `ab_testing.py`, `distribuicao_bootstrap.png`, `distribuicao_permutacao.png`, discussão no README | Feito |
+| **2/3 — colega** | 4.3 Regressão múltipla e classificação | `src/models/regression.py`, `src/models/machine_learning.py` (Logística + KNN + GridSearchCV) | Pendente |
+| **3/3 — colega** | 4.4 PCA/K-Means; 4.5 causalidade | `src/models/unsupervised.py`, `curva_cotovelo_kmeans.png`, `clusters_kmeans.png`, `pca_projecao.png`, discussão causal no README | Pendente |
+
+O colega da classificação/regressão precisa incluir `scikit-learn` no `requirements.txt`. O colega do não supervisionado deve plugar PCA e K-Means no `main.py` após a etapa 7 e gerar os três gráficos restantes na raiz do projeto.
+
+---
+
+## 12. Estimação de parâmetros e Bootstrap (seção 4.1)
+
+Variável escolhida: `numero_queimadas`, a contagem registrada de queimadas por estado, mês e ano. É a variável numérica central do dataset limpo da Parte 1.
+
+### 12.1. Parâmetros amostrais observados
+
+A partir de `dados_limpos_final.csv` (N = 6.454):
+
+| Quantidade | Valor |
+|---|---|
+| Média amostral \(\bar{X}\) | 108,29 |
+| Desvio padrão amostral \(s\) | 190,81 |
+| Mediana | 24,00 |
+| Assimetria (3º momento padronizado) | 2,55 |
+| Mínimo / máximo | 0 / 998 |
+
+A média é bem maior que a mediana: a distribuição original é assimétrica à direita, o que é típico de contagens de queimadas (muitos registros baixos e alguns meses/estados com picos extremos).
+
+### 12.2. Reamostragem bootstrap
+
+Foram geradas **2.000 réplicas com reposição**, cada uma com o mesmo tamanho da amostra original (N = 6.454). Em cada réplica calcula-se a média. O processo está em `src/inference/bootstrap.py`, com semente `42` para reprodução.
+
+### 12.3. Intervalos de confiança de 95%
+
+Dois métodos foram aplicados à média populacional do número de queimadas:
+
+| Método | Limite inferior | Limite superior | Amplitude |
+|---|---|---|---|
+| **Não-paramétrico (bootstrap)** — percentis 2,5% e 97,5% da distribuição empírica | 103,76 | 113,08 | 9,32 |
+| **Paramétrico tradicional** — \(\bar{X} \pm 1{,}96 \cdot s / \sqrt{N}\) | 103,64 | 112,95 | 9,31 |
+
+Erro padrão analítico: \(s / \sqrt{N} = 2{,}38\).
+
+Os dois intervalos são praticamente coincidentes (diferença de amplitude de cerca de 0,01). O gráfico `distribuicao_bootstrap.png` mostra o histograma das médias bootstrap, aproximadamente em forma de sino e centrado em 108,29, com as linhas dos dois ICs sobrepostas.
+
+### 12.4. Discussão científica: TCL e comparação dos ICs
+
+O **Teorema Central do Limite** afirma que a distribuição amostral da média se aproxima de uma Normal quando N é grande, mesmo que a variável original não seja normal.
+
+No nosso caso:
+
+- **Tamanho amostral.** N = 6.454 é muito maior do que o limiar usual de 30. Isso favorece fortemente a aproximação normal da média.
+- **Assimetria.** A variável original é assimétrica (assimetria ≈ 2,55; média 108 vs. mediana 24). Isso viola a normalidade dos *dados brutos*, mas **não impede o TCL para a média**. A distribuição bootstrap das médias ficou simétrica e acampanada, exatamente o comportamento previsto pelo TCL.
+- **Independência.** O TCL clássico assume observações i.i.d. Os registros são agregados por estado-mês-ano e há dependência espacial e temporal (um mês seco em um estado vizinho não é independente de outro). Essa dependência não invalida o exercício de intervalo para a média da *amostra observada*, mas torna o erro padrão um pouco otimista se o alvo for inferência para um processo espaço-temporal.
+
+**Comparação dos métodos.** Com N grande, o IC paramétrico e o IC bootstrap coincidem. O bootstrap não precisa assumir normalidade da variável original: ele reconstrói a distribuição da média por reamostragem. O método paramétrico assume que \(\bar{X}\) é aproximadamente normal e usa o erro padrão analítico. A coincidência dos limites (103,8 vs. 103,6 na esquerda; 113,1 vs. 112,9 na direita) é evidência empírica de que as condições do TCL **se aplicam à média amostral desta variável**, apesar da assimetria dos dados brutos.
+
+Em termos práticos: com 95% de confiança, a média populacional do número de queimadas registradas por estado-mês está entre cerca de **104 e 113 focos**.
+
+---
+
+## 13. Teste de hipóteses e teste A/B (seção 4.2)
+
+### 13.1. Definição dos grupos
+
+Segmentação sugerida pelo enunciado para o tema Meio Ambiente: **período seco (Grupo A) versus período chuvoso (Grupo B)**.
+
+| Grupo | Período | Meses | Critério |
+|---|---|---|---|
+| **A** | Seco | junho a outubro (6–10) | Temporada clássica de queimadas no Brasil (estiagem na maior parte do território) |
+| **B** | Chuvoso | novembro a maio (11–12 e 1–5) | Período de maior precipitação na média nacional |
+
+Os grupos são mutuamente exclusivos: cada registro tem um único `mes_numero`, logo pertence a um único período. A variável resposta é `numero_queimadas`.
+
+### 13.2. Hipóteses e significância
+
+\[
+H_0: \mu_{\text{seco}} = \mu_{\text{chuvoso}}
+\]
+
+\[
+H_1: \mu_{\text{seco}} \neq \mu_{\text{chuvoso}}
+\]
+
+Em palavras: sob H0, o número médio de queimadas registradas é o mesmo nos dois períodos. Sob H1, as médias diferem (teste **bicaudal**).
+
+Limite de significância: \(\alpha = 0{,}05\).
+
+Estatística de teste observada:
+
+\[
+\hat{\theta} = \bar{X}_A - \bar{X}_B = 142{,}09 - 83{,}98 = 58{,}11
+\]
+
+Tamanhos: \(N_A = 2{.}700\) (seco) e \(N_B = 3{.}754\) (chuvoso).
+
+### 13.3. Teste de permutação
+
+Sob H0 os rótulos “seco” e “chuvoso” são intercambiáveis. O algoritmo em `src/inference/ab_testing.py` embaralha os rótulos **2.000 vezes**, recalcula \(\bar{X}_A - \bar{X}_B\) a cada iteração e monta a distribuição da estatística sob a nula.
+
+O p-valor bicaudal empírico é a proporção de permutações com \(|\hat{\theta}_{\text{perm}}| \ge |\hat{\theta}_{\text{obs}}|\).
+
+Resultado: **0 das 2.000 permutações** geraram diferença tão extrema quanto 58,11. Logo
+
+\[
+p < \frac{1}{2000} = 0{,}0005
+\]
+
+Como \(p < 0{,}05\), **rejeitamos H0** ao nível de 5%.
+
+O gráfico `distribuicao_permutacao.png` mostra a distribuição nula centrada em zero (entre cerca de −20 e +20) e a diferença observada (58,11) bem à direita, fora da massa de probabilidade simulada.
+
+### 13.4. Análise crítica e significado prático
+
+A rejeição de H0 indica associação estatística forte: no dataset limpo, o período seco registra em média **cerca de 58 queimadas a mais por estado-mês** do que o período chuvoso (142 vs. 84).
+
+No domínio ambiental, isso é coerente com o calendário de risco de fogo no Brasil: menor umidade, maior déficit hídrico e práticas agrícolas de limpeza de terreno concentram-se na estiagem. O teste de permutação não assume normalidade e confirma que uma diferença dessa magnitude é incompatível com um sorteio aleatório dos rótulos.
+
+**O que o teste não autoriza.** Os dados são observacionais. Rejeitar H0 não prova que “a seca causa queimadas” de forma isolada: mês é um marcador de clima, calendário agrícola, fiscalização e capacidade de detecção (ver seção 7). O p-valor mede evidência contra a igualdade das médias na amostra, não um efeito causal. A discussão causal formal da seção 4.5 fica para o terceiro recorte do trio, depois da modelagem supervisionada e da clusterização.

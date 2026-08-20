@@ -1,0 +1,26 @@
+============================================================
+TESTE A/B — PERMUTAÇÃO (PERÍODO SECO vs. PERÍODO CHUVOSO)
+============================================================
+Variável resposta...........: numero_queimadas
+Grupo A (período seco)......: meses [6, 7, 8, 9, 10]
+Grupo B (período chuvoso)...: meses [11, 12, 1, 2, 3, 4, 5]
+Iterações de permutação.....: 2,000
+Semente aleatória...........: 42
+α (significância)...........: 0.05
+
+Hipóteses
+  H0: μ_seco = μ_chuvoso  (o número médio de queimadas registradas é igual nos dois períodos)
+  H1: μ_seco ≠ μ_chuvoso  (o número médio de queimadas registradas difere entre os períodos)
+
+Amostras
+  N_A (seco)................: 2,700
+  N_B (chuvoso).............: 3,754
+  Média A (seco)............: 142.0915
+  Média B (chuvoso).........: 83.9843
+  Estatística observada.....: 58.1072
+      (X barra_A − X barra_B)
+
+Resultado do teste de permutação (bicaudal)
+  p-valor empírico..........: < 0.0005 (0/2,000 permutações tão extremas)
+  Decisão...................: Rejeitar H0 ao nível de 5%.
+============================================================

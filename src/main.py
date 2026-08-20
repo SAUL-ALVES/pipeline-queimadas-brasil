@@ -11,6 +11,12 @@ Fluxo:
 4 - Relatório
 5 - Exportação
 6 - Visualizações
+7 - Inferência estatística (bootstrap e teste A/B)
+
+Pendente para os colegas (Parte 2):
+- 4.3 regressão múltipla e classificação (src/models/)
+- 4.4 PCA / K-Means (src/models/unsupervised.py)
+- 4.5 discussão causal complementar no README
 
 Execução:
 
@@ -23,6 +29,8 @@ import logging
 import sys
 import time
 from pathlib import Path
+
+import pandas as pd
 
 SRC_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SRC_DIR.parent
@@ -42,6 +50,8 @@ from config import (
     REPORT_DIR,
     REPORT_FILE,
     STATISTICS_FILE,
+    BOOTSTRAP_PLOT,
+    PERMUTACAO_PLOT,
 )
 
 # ================================
@@ -67,6 +77,8 @@ from analysis.report import Report
 # ================================
 
 from visualize import Visualizer
+from inference.bootstrap import executar_bootstrap
+from inference.ab_testing import executar_teste_ab
 
 # ================================
 # Logs
@@ -96,7 +108,7 @@ def executar_pipeline():
     # EXTRAÇÃO
     # ------------------------------------------------------
 
-    logger.info("[1/6] Extraindo dados...")
+    logger.info("[1/7] Extraindo dados...")
 
     df_bruto = extrair_dados(RAW_DIR)
 
@@ -109,7 +121,7 @@ def executar_pipeline():
     # LIMPEZA
     # ------------------------------------------------------
 
-    logger.info("[2/6] Limpando dados...")
+    logger.info("[2/7] Limpando dados...")
 
     df = limpar_dados(df_bruto)
 
@@ -132,7 +144,7 @@ def executar_pipeline():
     # EDA
     # ------------------------------------------------------
 
-    logger.info("[3/6] Executando EDA...")
+    logger.info("[3/7] Executando EDA...")
 
     eda = EDA(df, REPORT_DIR)
 
@@ -149,7 +161,7 @@ def executar_pipeline():
     # EXPORTAÇÃO
     # ------------------------------------------------------
 
-    logger.info("[4/6] Exportando CSV tratado...")
+    logger.info("[4/7] Exportando CSV tratado...")
 
     OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
 
@@ -165,7 +177,7 @@ def executar_pipeline():
     # RELATÓRIO
     # ------------------------------------------------------
 
-    logger.info("[5/6] Gerando relatório...")
+    logger.info("[5/7] Gerando relatório...")
 
     report = Report(
         df,
@@ -180,7 +192,7 @@ def executar_pipeline():
     # GRÁFICOS
     # ------------------------------------------------------
 
-    logger.info("[6/6] Gerando gráficos...")
+    logger.info("[6/7] Gerando gráficos...")
 
     visual = Visualizer(
         df,
@@ -190,6 +202,35 @@ def executar_pipeline():
     visual.gerar_todos()
 
     logger.info("Gráficos gerados em: %s", GRAPH_DIR)
+
+    # ------------------------------------------------------
+    # INFERÊNCIA ESTATÍSTICA (Parte 2 — recorte 1/3 do trio)
+    # Usa obrigatoriamente o CSV limpo exportado na etapa anterior.
+    # Colegas: plugar regressão, classificação e não supervisionado aqui.
+    # ------------------------------------------------------
+
+    logger.info("[7/7] Inferência estatística (bootstrap e teste A/B)...")
+
+    df_limpo = pd.read_csv(OUTPUT_CSV)
+
+    resultado_boot = executar_bootstrap(df_limpo)
+    visual.grafico_bootstrap(
+        resultado_boot["medias_bootstrap"],
+        resultado_boot["parametros"]["media"],
+        resultado_boot["ic_bootstrap"],
+        resultado_boot["ic_parametrico"],
+        BOOTSTRAP_PLOT,
+    )
+
+    resultado_ab = executar_teste_ab(df_limpo)
+    visual.grafico_permutacao(
+        resultado_ab["estatisticas_nulas"],
+        resultado_ab["estatistica_observada"],
+        PERMUTACAO_PLOT,
+    )
+
+    logger.info("Gráfico bootstrap : %s", BOOTSTRAP_PLOT)
+    logger.info("Gráfico permutação: %s", PERMUTACAO_PLOT)
 
     # ------------------------------------------------------
 

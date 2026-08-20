@@ -11,6 +11,8 @@ Gráficos gerados:
 ✔ Queimadas por Região
 ✔ Queimadas por Mês
 ✔ Heatmap Ano x Mês
+✔ Distribuição bootstrap da média (Parte 2)
+✔ Distribuição de permutação do teste A/B (Parte 2)
 """
 
 from pathlib import Path
@@ -231,6 +233,124 @@ class Visualizer:
         plt.savefig(self.output_dir/"05_heatmap.png",dpi=150)
 
         plt.close()
+
+    # -------------------------------------------------------
+
+    def grafico_bootstrap(
+        self,
+        medias,
+        media_obs,
+        ic_bootstrap,
+        ic_parametrico,
+        destino,
+    ):
+        """
+        Histograma das médias bootstrap com os limites dos dois ICs de 95%.
+
+        Arquivo exigido pelo enunciado: distribuicao_bootstrap.png
+        """
+        destino = Path(destino)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+
+        plt.figure(figsize=(12, 6))
+        plt.hist(medias, bins=40, color="#4C78A8", edgecolor="white", alpha=0.9)
+
+        plt.axvline(
+            media_obs,
+            color="black",
+            linestyle="-",
+            linewidth=2,
+            label=f"Média amostral = {media_obs:.2f}",
+        )
+        plt.axvline(
+            ic_bootstrap[0],
+            color="#E45756",
+            linestyle="--",
+            linewidth=2,
+            label=f"IC bootstrap 2,5% = {ic_bootstrap[0]:.2f}",
+        )
+        plt.axvline(
+            ic_bootstrap[1],
+            color="#E45756",
+            linestyle="--",
+            linewidth=2,
+            label=f"IC bootstrap 97,5% = {ic_bootstrap[1]:.2f}",
+        )
+        plt.axvline(
+            ic_parametrico[0],
+            color="#54A24B",
+            linestyle=":",
+            linewidth=2.5,
+            label=f"IC paramétrico inf. = {ic_parametrico[0]:.2f}",
+        )
+        plt.axvline(
+            ic_parametrico[1],
+            color="#54A24B",
+            linestyle=":",
+            linewidth=2.5,
+            label=f"IC paramétrico sup. = {ic_parametrico[1]:.2f}",
+        )
+
+        plt.title("Distribuição Bootstrap da Média de Queimadas")
+        plt.xlabel("Média bootstrap do número de queimadas")
+        plt.ylabel("Frequência das réplicas")
+        plt.legend(frameon=False)
+        plt.grid(True, axis="y", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(destino, dpi=150)
+        plt.close()
+
+        logger.info("Gráfico bootstrap salvo em: %s", destino)
+
+    # -------------------------------------------------------
+
+    def grafico_permutacao(
+        self,
+        estatisticas_nulas,
+        estatistica_observada,
+        destino,
+    ):
+        """
+        Histograma da estatística sob H0, com a diferença observada destacada.
+
+        Arquivo exigido pelo enunciado: distribuicao_permutacao.png
+        """
+        destino = Path(destino)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+
+        plt.figure(figsize=(12, 6))
+        plt.hist(
+            estatisticas_nulas,
+            bins=40,
+            color="#9D755D",
+            edgecolor="white",
+            alpha=0.9,
+        )
+        plt.axvline(
+            estatistica_observada,
+            color="#E45756",
+            linestyle="-",
+            linewidth=2.5,
+            label=f"Diferença observada = {estatistica_observada:.2f}",
+        )
+        plt.axvline(
+            -abs(estatistica_observada),
+            color="#E45756",
+            linestyle=":",
+            linewidth=1.8,
+            label="Limite simétrico (teste bicaudal)",
+        )
+
+        plt.title("Distribuição da Diferença de Médias sob H0 (Permutação)")
+        plt.xlabel("X̄ seco − X̄ chuvoso (sob H0)")
+        plt.ylabel("Frequência das permutações")
+        plt.legend(frameon=False)
+        plt.grid(True, axis="y", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(destino, dpi=150)
+        plt.close()
+
+        logger.info("Gráfico de permutação salvo em: %s", destino)
 
     # -------------------------------------------------------
 
