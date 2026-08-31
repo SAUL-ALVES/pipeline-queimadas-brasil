@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Os outputs (outputs/dados, outputs/graficos, outputs/relatorios) sao
+# versionados de proposito para a entrega: o professor ve os resultados
+# sem precisar baixar o dataset e rodar o pipeline.
+
+# Dados brutos pesados (manter apenas o instrutivo .md)
+/data/raw/*.csv
+
+# Ambiente / editor
+.idea/
+.vscode/
+.DS_Store
+
+# Notas locais
+NOTES.md

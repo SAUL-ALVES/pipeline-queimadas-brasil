@@ -1,0 +1,26 @@
+============================================================
+INFERÊNCIA — BOOTSTRAP E INTERVALOS DE CONFIANÇA (95%)
+============================================================
+Variável....................: numero_queimadas
+Tamanho amostral (N)........: 6,454
+Réplicas bootstrap..........: 2,000
+Semente aleatória...........: 42
+
+Parâmetros amostrais observados
+  Média (X barra)...........: 108.2932
+  Desvio padrão (s).........: 190.8122
+  Mediana...................: 24.0000
+  Assimetria................: 2.5487
+  Mínimo / Máximo...........: 0.0000 / 998.0000
+
+Intervalo de confiança 95% — Bootstrap (percentis 2,5% e 97,5%)
+  Limite inferior...........: 103.7615
+  Limite superior...........: 113.0806
+  Amplitude.................: 9.3191
+
+Intervalo de confiança 95% — Paramétrico (X barra ± 1,96 · s/√N)
+  Erro padrão (s/√N)........: 2.3752
+  Limite inferior...........: 103.6379
+  Limite superior...........: 112.9485
+  Amplitude.................: 9.3106
+============================================================

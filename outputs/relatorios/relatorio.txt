@@ -1,0 +1,22 @@
+============================================================
+RELATÓRIO DO PIPELINE DE QUEIMADAS
+============================================================
+
+Total de registros.............: 6,454
+Estados analisados............: 23
+Regiões analisadas............: 5
+Período.......................: 1998 - 2017
+
+Média de queimadas............: 108.29
+Mediana.......................: 24.00
+Máximo........................: 998.00
+Mínimo........................: 0.00
+
+Estado com maior ocorrência...: Mato Grosso
+Região com maior ocorrência...: Nordeste
+Ano mais crítico..............: 2003
+Mês mais crítico..............: Julho
+
+============================================================
+Relatório gerado automaticamente pelo pipeline.
+============================================================
